@@ -2,6 +2,7 @@ import os
 import time
 import whisper
 import subprocess
+import torch
 from moviepy import VideoFileClip
 
 # 폴더 경로 설정
@@ -31,7 +32,15 @@ if not check_ffmpeg():
 
 # Whisper 모델 로드 (base, small, medium, large 중 택 1)
 print("🔄 Whisper 모델 로딩 중...")
-model = whisper.load_model("small")
+model = whisper.load_model("base")
+
+# CUDA 사용 가능 시 모델을 GPU로 이동
+if torch.cuda.is_available():
+    model = model.to("cuda")
+    print("✅ CUDA 사용 중 (GPU)")
+else:
+    print("⚠️ CUDA 미사용 (CPU 사용 중)")
+
 print("✅ 모델 로딩 완료")
 
 # 모든 MP4 영상 처리
@@ -70,7 +79,7 @@ for filename in os.listdir(video_folder):
             # Whisper는 내부적으로 환경변수 FFMPEG_BINARY를 확인함
             os.environ["FFMPEG_BINARY"] = "ffmpeg"  # 시스템 PATH에 있는 ffmpeg 사용
             
-            result = model.transcribe(abs_audio_path, language="ko")
+            result = model.transcribe(abs_audio_path, language="ko", fp16=False)
             text = result["text"]
             print("✅ 텍스트 변환 완료")
 
